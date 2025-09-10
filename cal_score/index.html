@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Username Total Finder</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Sarabun', 'Inter', sans-serif;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen">
+
+    <div class="bg-white p-8 rounded-2xl shadow-lg max-w-lg w-full m-4">
+        <div class="text-center mb-8">
+            <h1 class="text-3xl font-bold text-gray-800">แคลคูลัสสำหรับวิศวกร 1</h1>
+            <p class="text-gray-500 mt-2">กรอกรหัสนักศึกษาเพื่อตรวจสอบคะแนนสอบกลางภาค 1/2568</p>
+        </div>
+
+        <!-- Username Input Section -->
+        <div class="mb-4">
+            <label for="username-input" class="block text-sm font-medium text-gray-700">Student ID</label>
+            <input type="text" id="username-input" placeholder="e.g., 116830411001-2" class="mt-2 block w-full px-4 py-3 bg-gray-50 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition">
+        </div>
+
+        <!-- PDPA Consent Checkbox -->
+        <div class="flex items-start mb-6">
+            <div class="flex items-center h-5">
+                <input id="pdpa-consent" name="pdpa-consent" type="checkbox" class="focus:ring-blue-500 h-4 w-4 text-blue-600 border-gray-300 rounded">
+            </div>
+            <div class="ml-3 text-sm">
+                <label for="pdpa-consent" class="font-medium text-gray-700">การยืนยันความเป็นส่วนตัว</label>
+                <p class="text-gray-500">ข้าพเจ้ายืนยันว่าชื่อผู้ใช้ที่กรอกเป็นของข้าพเจ้าเอง และยินยอมให้มีการประมวลผลข้อมูลส่วนบุคคลเพื่อตรวจสอบคะแนน</p>
+            </div>
+        </div>
+
+
+        <!-- Find Button -->
+        <button id="find-total-btn" class="w-full bg-blue-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-transform transform hover:scale-105 shadow-md disabled:bg-gray-400 disabled:cursor-not-allowed disabled:transform-none" disabled>
+            ตรวจสอบคะแนน
+        </button>
+
+        <!-- Result Display Section -->
+        <div id="result-container" class="mt-8 text-center hidden">
+            <div class="p-6 bg-gray-50 rounded-lg">
+                <p id="user-name-output" class="text-2xl font-semibold text-gray-700 mb-2"></p>
+                <p class="text-lg text-gray-600">Total Score:</p>
+                <p id="result-output" class="text-4xl font-extrabold text-blue-600 mt-2">-</p>
+            </div>
+            
+            <!-- Normal Curve Chart -->
+            <div class="mt-6" id="chart-container">
+                <canvas id="score-curve-canvas" width="500" height="250"></canvas>
+                <div class="text-sm text-gray-600 mt-2" id="stats-container">
+                    <p>Class Average: <span id="avg-score" class="font-bold"></span></p>
+                    <p>Standard Deviation: <span id="std-dev" class="font-bold"></span></p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Error Message -->
+        <div id="error-message" class="mt-6 text-center text-red-600 font-medium hidden"></div>
+
+    </div>
+
+    <script>
+        // Store parsed CSV data globally
+        let csvData = [];
+        let scoreStats = { mean: 0, stdDev: 0 };
+        const fullScore = 40;
+        
+        // --- Hardcoded CSV data ---
+        const csvContent = `student_id,name,score
+student_id,name,score
+116830411001-2,นางสาวจารุวรรณ ชาวปลายนา,10
+116830411002-0,นางสาวเบญจวรรณ วรรณทวี,22
+116830411004-6,นางสาวอรทัย นันทิสุทธิ์วงศ์,17
+116830411005-3,นางสาวขวัญจิรา เรืองสังข์,13
+116830411006-1,นายพิภู เอี่ยวเจริญ,29
+116830411007-9,นายศิวัฒน์ เสืออย่าง,29
+116830411008-7,นายวทัญญู หนูพันธ์,23
+116830411009-5,นายนคร มากยก,15
+116830411010-3,นางสาวฑิภารักน์ จันทร์มี,12
+116830411011-1,นางสาวนัทธมน วัชรกาฬ,10
+116830411012-9,นายดุลชัย นามลิ้มเหมนที,22
+116830411013-7,นางสาวปภาวรินทร์ ทิศอาจ,ขาดสอบ
+116830411014-5,นายภูริทัศน์ หนูแก้ว,10
+116830411015-2,นางสาววสุนันท์ มาเล็ก,13
+116830411016-0,นางสาวไหมเยีย แซ่วื่อ,14
+116830411017-8,นางสาวภูริษา อยู่ซบ,12
+116830411018-6,นายศิวกร ทองอิ่น,25
+116830411036-8,นางสาวสุพิชญา อิ่มหิรัญ,9
+116830411037-6,นางสาวอาทิตติยา สุวรรณสงคราม,11
+116830411038-4,นายศักณฤทธิ์ ไชยกล,21
+116830411039-2,นางสาวขนิษฐา รัสมะโน,17
+116830411040-0,นางสาวจิดาภา ชูสังข์,19
+116830411041-8,นายกิตติศักดิ์ พันธ์กสิกร,19
+116830411042-6,นางสาวธณัฐชญา รชตวงศ์ชัย,33
+116830411043-4,นางสาวพิยดา หวังล้อมกลาง,12
+116830411044-2,นายธีรภัทร กันเสน,12
+116830411045-9,นายประเสริฐ ธรรมณี,13
+116830411047-5,นายชินภัทร สุทธิลักษณ์,11
+116830411049-1,นายเธียรวิชญ์ บุบผะโก,9
+116830411050-9,นายปวีณวิช ทองนพคุณ,ขาดสอบ
+116830411051-7,นางสาววิไลลักษณ์ ชูกรณ์,15
+116830411052-5,นายพีรวัส อักษร,13
+116830411053-3,นายธนวัฒน์ กะลาสี,ขาดสอบ
+116830411054-1,นายนภสินธุ์ มูลสารี,16
+116830411055-8,นายอัฐภิญญา ดัดเสือ,15
+116830411056-6,นายจุลพัฒน์ จันทะคุณ,15
+116830411057-4,นางสาวลักษมี ธนทรัพย์พาณิชย์,9
+116830411058-2,นายเทวฤทธิ์ อำนาจ,9
+116830411059-0,นายภาณุ ช่วยรักษ์,7
+116830411060-8,นางสาวสุธาลินี เเรงรายบุญ,16
+116830411061-6,นางสาวสุกัญญา คงเฉลิม,10
+116830411062-4,นางสาวกัญญ์วรา เยี้ยนชลคำ,15
+116610400472-4,นายพญา ผาสุข,15
+116730205063-4,นายปรเมศวร์ จอมเศียร,14
+116730205068-3,นายศุภณัฐ ทิพยเนตร,11
+116730205086-5,นายกฤษณพงศ์ ฉันท์พิชญานันท์,11
+116730205107-9,นางสาวสุกัลยา สุขชนะ,14
+116730205115-2,นายอนุวัฒน์ หมอกบัว,9
+116810400355-7,นางสาวนันทิชา ชื่นชม,14
+116810400359-9,นายธนโชติ ภู่ระหงษ์,17
+116810400360-7,นางสาวดลยา เกษร,9
+116810400362-3,นางสาวโสภิตนภา พวงแก้ว,20
+116810400363-1,นางสาวสุรภา เมฆานุพักตร์,34
+116810400364-9,นายวรากร จันทร์สวยดี,14
+116810400366-4,นายชิษณุพงศ์ เดชโชติ,17
+116810400368-0,นายฟ้าประทาน จันธิปะ,13
+116810400370-6,นายนรภัทร อ่อนนนท์,13
+116810461601-0,นางสาวสุณัฐชา พรมโสด,21
+116810461603-6,นายสรวิชญ์ อนุเดช,12
+116810461604-4,นายปัญญา มีทรัพย์ทอง,9
+116810461605-1,นายอริสมัญชุ์ แววบรรฑิต,12
+116810461606-9,นายอภิวิชญ์ วงศ์มะเซาะ,12
+116810461607-7,นายพิชชากร เผยศิริ,18
+116810461609-3,นางสาวภทรพรรณ ทาหอม,12
+116810461610-1,นายเทพทัต ชูแก้ว,19
+116810461611-9,นายคงคา ชารีวรรณ,22
+116810461612-7,นายวชิรวิทย์ ศรีเลย,25
+116810461613-5,นายวีรวุฒิ สิงห์สอน,9
+116810461614-3,นายชนาธิป แก้วแย้ม,13
+116810461615-0,นายชัชพงศ์ คุณีย์พันธุ์,10
+116810461616-8,นายนรงฤทธิ์ จุฬา,13
+116810461617-6,นายจตุพร รามประพฤติ,17
+116810461618-4,นายพิชิตชัย แสงสุระ,18
+116810461619-2,นายเนติพัฒน์ แสนประเสริฐ,9
+116810461620-0,นายแทนคุณ ขวัญเมือง,20
+116810461621-8,นายชนะศึก สง่าดำ,7
+116810461623-4,นายปฏิพัฒน์ เที่ยงธรรม,16
+116810461624-2,นายธนกฤต นิลสนิท,18
+116810461626-7,นางสาวเนตรดาว คงสัมพันธ์,11
+116810461628-3,นายเดชาธร จวงกระโทก,12
+116810461630-9,นายนิธิพัฒน์ เม่นสูงเนิน,32
+116810461631-7,นายนพเก้า อัณฑยานนท์,13
+116810461632-5,นายเฉินหลง หลิน,21
+116810461633-3,นายนฤชัย จุลวัฒนะ,18
+116810461634-1,นางสาวจุฬาลักษณ์ เกตุแก้ว,15
+116810461635-8,นายยศอนันต์ กระแสร์,8
+116810461636-6,นายปฏิพัทธ์ บุญส่ง,12
+116810461638-2,นางสาวสุพรรษา หมายดี,9
+116810461639-0,นางสาวภัทร์ธะนิษฐา ทองพิทักษ์,17
+`;
+
+        const usernameInput = document.getElementById('username-input');
+        const findButton = document.getElementById('find-total-btn');
+        const pdpaConsent = document.getElementById('pdpa-consent');
+        const resultContainer = document.getElementById('result-container');
+        const resultOutput = document.getElementById('result-output');
+        const userNameOutput = document.getElementById('user-name-output');
+        const errorMessage = document.getElementById('error-message');
+        const canvas = document.getElementById('score-curve-canvas');
+        const chartContainer = document.getElementById('chart-container');
+        const avgScoreEl = document.getElementById('avg-score');
+        const stdDevEl = document.getElementById('std-dev');
+
+        /**
+         * Parses the text content of a CSV string.
+         */
+        function parseCSV(text) {
+            const lines = text.split(/\r\n|\n/).filter(line => line.trim() !== ''); 
+            if (lines.length < 2) { showError("CSV data is empty or invalid."); return; }
+            const headers = lines[0].split(',');
+            const studentIdIndex = headers.indexOf('student_id');
+            const nameIndex = headers.indexOf('name');
+            const scoreIndex = headers.indexOf('score');
+
+            if(studentIdIndex === -1 || nameIndex === -1 || scoreIndex === -1) { 
+                showError("CSV must have 'student_id', 'name', and 'score' columns."); 
+                return; 
+            }
+            csvData = lines.slice(1).map(line => {
+                const data = line.split(',');
+                return { 
+                    student_id: data[studentIdIndex]?.trim(), 
+                    name: data[nameIndex]?.trim(),
+                    score: data[scoreIndex]?.trim()
+                };
+            });
+        }
+        
+        /**
+         * Calculates the mean and standard deviation of the scores.
+         */
+        function calculateStatistics() {
+            const scores = csvData.map(row => Number(row.score)).filter(score => !isNaN(score));
+            if (scores.length === 0) return;
+            
+            const mean = scores.reduce((acc, val) => acc + val, 0) / scores.length;
+            const variance = scores.reduce((acc, val) => acc + Math.pow(val - mean, 2), 0) / scores.length;
+            const stdDev = Math.sqrt(variance);
+
+            scoreStats = { mean, stdDev };
+            avgScoreEl.textContent = mean.toFixed(2);
+            stdDevEl.textContent = stdDev.toFixed(2);
+        }
+
+        // --- Event Listener to parse data when the page loads ---
+        document.addEventListener('DOMContentLoaded', () => {
+            parseCSV(csvContent);
+            calculateStatistics();
+        });
+
+        // --- Event Listener for Consent Checkbox ---
+        pdpaConsent.addEventListener('change', () => {
+            findButton.disabled = !pdpaConsent.checked;
+        });
+
+        // --- Event Listener for Find Button ---
+        findButton.addEventListener('click', () => {
+            const studentId = usernameInput.value.trim();
+            if (!studentId) { showError("Please enter a Student ID."); return; }
+            hideError();
+
+            const userRecord = csvData.find(row => row.student_id === studentId);
+
+            if (userRecord) {
+                userNameOutput.textContent = userRecord.name;
+                const scoreValue = userRecord.score;
+
+                if (!isNaN(parseFloat(scoreValue)) && isFinite(scoreValue)) {
+                    const numericScore = Number(scoreValue);
+                    resultOutput.textContent = `${numericScore} / ${fullScore}`;
+                    chartContainer.style.display = 'block';
+                    showResult();
+                    drawNormalCurve(numericScore);
+                } else {
+                    resultOutput.textContent = scoreValue;
+                    chartContainer.style.display = 'none';
+                    showResult();
+                }
+            } else {
+                showError(`Student ID "${studentId}" not found.`);
+                hideResult();
+            }
+        });
+        
+        usernameInput.addEventListener('keyup', (event) => {
+            if (event.key === 'Enter') { 
+                event.preventDefault(); 
+                if(!findButton.disabled) {
+                    findButton.click(); 
+                }
+            }
+        });
+
+        /**
+         * Draws the normal distribution curve on the canvas.
+         * @param {number} userScore - The score of the current user.
+         */
+        function drawNormalCurve(userScore) {
+            const ctx = canvas.getContext('2d');
+            const { width, height } = canvas;
+            ctx.clearRect(0, 0, width, height);
+
+            const { mean, stdDev } = scoreStats;
+            if (stdDev === 0) return;
+
+            const padding = 50;
+            const chartWidth = width - padding * 2;
+            const chartHeight = height - padding;
+            
+            // Function to map a score to an X coordinate
+            const getX = (score) => padding + (score / fullScore) * chartWidth;
+
+            // Function for the normal distribution PDF
+            const pdf = (x) => (1 / (stdDev * Math.sqrt(2 * Math.PI))) * Math.exp(-0.5 * Math.pow((x - mean) / stdDev, 2));
+            const maxPdf = pdf(mean); // Peak of the curve
+
+            // Draw the curve
+            ctx.beginPath();
+            ctx.moveTo(getX(0), height - padding / 2);
+            for (let score = 0; score <= fullScore; score += 0.5) {
+                const x = getX(score);
+                const y = (height - padding / 2) - (pdf(score) / maxPdf) * (chartHeight * 0.9);
+                ctx.lineTo(x, y);
+            }
+            ctx.strokeStyle = '#3b82f6'; // Blue
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            // Draw X-axis
+            ctx.beginPath();
+            ctx.moveTo(padding, height - padding / 2);
+            ctx.lineTo(width - padding, height - padding / 2);
+            ctx.strokeStyle = '#9ca3af'; // Gray
+            ctx.lineWidth = 1;
+            ctx.stroke();
+
+            // Helper to draw lines and text
+            const drawMarker = (score, color, text, isUser = false) => {
+                const x = getX(score);
+                ctx.beginPath();
+                ctx.moveTo(x, height - padding / 2);
+                ctx.lineTo(x, padding / 2);
+                ctx.strokeStyle = color;
+                ctx.lineWidth = isUser ? 2 : 1;
+                ctx.setLineDash(isUser ? [] : [5, 5]);
+                ctx.stroke();
+                ctx.setLineDash([]);
+                
+                ctx.fillStyle = color;
+                ctx.font = 'bold 12px Inter';
+                ctx.textAlign = 'center';
+                ctx.fillText(text, x, padding / 2 - 5);
+            };
+
+            // Draw markers
+            drawMarker(mean, '#10b981', `Avg: ${mean.toFixed(1)}`);
+            drawMarker(userScore, '#ef4444', `You: ${userScore}`, true);
+
+            // Add axis labels
+            ctx.fillStyle = '#6b7280';
+            ctx.font = '12px Inter';
+            ctx.fillText('0', padding, height - padding / 2 + 15);
+            ctx.fillText(String(fullScore), width - padding, height - padding/2 + 15);
+        }
+
+        // --- UI Helper Functions ---
+        function showError(message) { errorMessage.textContent = message; errorMessage.classList.remove('hidden'); }
+        function hideError() { if (!errorMessage.classList.contains('hidden')) { errorMessage.classList.add('hidden'); } }
+        function showResult() { if (resultContainer.classList.contains('hidden')) { resultContainer.classList.remove('hidden'); } }
+        function hideResult() { 
+            if (!resultContainer.classList.contains('hidden')) { 
+                resultContainer.classList.add('hidden'); 
+            } 
+            resultOutput.textContent = '-';
+            userNameOutput.textContent = '';
+        }
+    </script>
+</body>
+</html>
+
