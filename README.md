@@ -36,8 +36,8 @@ Functions limits and continuity, differentiation, indeterminate forms, applicati
 |----| -----|------------|
 | 1  | ฟังก์ชัน ลิมิตและความต่อเนื่อง (Function Limit and Continuity) | [เอกสารบทที่ 1](./materials/ch_01/texts.pdf) |
 | 2  | อนุพันธ์ของฟังก์ชัน (Derivative of a Function)  | [เอกสารบทที่ 2](./materials/ch_02/texts.pdf)  |
-| 3  | การประยุกต์อนุพันธ์ (The Derivative in Applications) | [เอกสารบทที่ 3](./materials/ch_03/texts.pdf) |
-| 4  | การหาปริพันธ์ (Integration) | [เอกสารบทที่ 4](./materials/ch_04/texts.pdf)  |
+| 3  | การประยุกต์อนุพันธ์ (The Derivative in Applications) | [เอกสารบทที่ 3](./materials/ch3.pdf) |
+| 4  | การหาปริพันธ์ (Integration) | [เอกสารบทที่ 4](./materials/ch4.pdf)  |
 | 5  | เทคนิคการหาปริพันธ์ (Integration Technique) | [เอกสารบทที่ 5](./materials/ch_05/texts.pdf) |
 | 6  | ปริพันธ์จำกัดเขตและการประยุกต์ (Definite Integral and Application) | [เอกสารบทที่ 6](./materials/ch_06/texts.pdf)|
 
