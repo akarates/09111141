@@ -32,8 +32,9 @@
 Functions limits and continuity, differentiation, indeterminate forms, applications of differentiation, integration, techniques of integration, applications of definite integral, algebra of vectors in three - dimensional space
 
 ## หัวข้อการบรรยาย
+
 |    | หัวข้อ | เอกสารประกอบ |
-|----| -----|------------|
+|-----|-----|-------------|
 | 1  | ฟังก์ชัน ลิมิตและความต่อเนื่อง (Function Limit and Continuity) | [เอกสารบทที่ 1](./materials/ch_01/texts.pdf) |
 | 2  | อนุพันธ์ของฟังก์ชัน (Derivative of a Function)  | [เอกสารบทที่ 2](./materials/ch_02/texts.pdf)  |
 | 3  | การประยุกต์อนุพันธ์ (The Derivative in Applications) | [เอกสารบทที่ 3](./materials/ch3.pdf) |
